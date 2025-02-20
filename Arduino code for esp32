@@ -1,0 +1,121 @@
+// Define pins for ultrasonic sensors
+const int trigPin1 = 9;  // Sensor 1
+const int echoPin1 = 10; // Sensor 1
+const int trigPin2 = 7;  // Sensor 2
+const int echoPin2 = 8;  // Sensor 2
+const int trigPin3 = 4;  // Sensor 3
+const int echoPin3 = 2;  // Sensor 3
+
+// Define pins for MOSFET gates controlling LEDs
+const int mosfetPin1 = 3;  // PWM Pin for LED1
+const int mosfetPin2 = 5; // PWM Pin for LED2
+const int mosfetPin3 = 6; // PWM Pin for LED3
+const int mosfetPin4 = 11; // PWM Pin for LED4
+const int ledPin5 = 12;     // Pin for LED5
+const int ledPin6 = 13;     // Pin for LED6
+
+// Variables for duration and distance
+long duration1, duration2, duration3;
+int distance1, distance2, distance3;
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(9600);
+
+  // Set ultrasonic sensor pins as input and output
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+  pinMode(trigPin3, OUTPUT);
+  pinMode(echoPin3, INPUT);
+
+  // Set MOSFET gate pins as output
+  pinMode(mosfetPin1, OUTPUT);
+  pinMode(mosfetPin2, OUTPUT);
+  pinMode(mosfetPin3, OUTPUT);
+  pinMode(mosfetPin4, OUTPUT);
+
+  // Set LED pins as output
+  pinMode(ledPin5, OUTPUT);
+  pinMode(ledPin6, OUTPUT);
+}
+
+void loop() {
+  // Read distances from all three ultrasonic sensors
+  distance1 = getDistance(trigPin1, echoPin1);
+  distance2 = getDistance(trigPin2, echoPin2);
+  distance3 = getDistance(trigPin3, echoPin3);
+
+  // Print the distances to the Serial Monitor
+  Serial.print("Distance 1: ");
+  Serial.print(distance1);
+  Serial.print(" cm\t");
+  Serial.print("Distance 2: ");
+  Serial.print(distance2);
+  Serial.print(" cm\t");
+  Serial.print("Distance 3: ");
+  Serial.print(distance3);
+  Serial.println(" cm");
+
+  // Control LEDs via MOSFETs based on distances
+  controlLEDs(distance1, distance2, distance3);
+
+  // Small delay before the next loop
+  delay(100);
+}
+
+int getDistance(int trigPin, int echoPin) {
+  // Clear the trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  // Set the trigPin HIGH for 10 microseconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Read the echoPin, returns the sound wave travel time in microseconds
+  long duration = pulseIn(echoPin, HIGH);
+
+  // Calculate the distance
+  int distance = duration * 0.034 / 2;
+
+  return distance;
+}
+
+void controlLEDs(int distance1, int distance2, int distance3) {
+  // Sensor 1 conditions
+  if (distance1 >= 4 && distance1 <= 22) {
+    analogWrite(mosfetPin1, 255); // LED1 100%
+    analogWrite(mosfetPin2, 255); // LED2 100%
+  } else {
+    analogWrite(mosfetPin1, 76); // LED1 30%
+    analogWrite(mosfetPin2, 76); // LED2 30%
+  }
+  
+  if (distance1 > 22 && distance1 <= 38) {
+    analogWrite(mosfetPin3, 255); // LED3 100%
+    analogWrite(mosfetPin4, 255); // LED4 100%
+  } else {
+    analogWrite(mosfetPin3, 76); // LED3 30%
+    analogWrite(mosfetPin4, 76); // LED4 30%
+  }
+
+  // Sensor 2 conditions
+  if (distance2 <= 18) {
+    analogWrite(mosfetPin3, 255); // LED3 100%
+    analogWrite(mosfetPin4, 255); // LED4 100%
+    digitalWrite(ledPin5, LOW);   // LED5 off
+    digitalWrite(ledPin6, LOW);   // LED6 off
+  } else {
+    analogWrite(mosfetPin3, 76); // LED3 30%
+    analogWrite(mosfetPin4, 76); // LED4 30%
+  }
+
+  // Sensor 3 conditions
+  if (distance3 <= 15) {
+    digitalWrite(ledPin5, HIGH);  // LED5 on
+    digitalWrite(ledPin6, HIGH);  // LED6 on
+  }
+}
